@@ -1,0 +1,74 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Hồ sơ người dùng - YouTube Downloader{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Thông tin cá nhân</h4>
+            </div>
+            <div class="card-body text-center">
+                {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}" alt="{{ user.username }}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;">
+                {% else %}
+                    <img src="https://via.placeholder.com/150" alt="{{ user.username }}" class="img-fluid rounded-circle mb-3">
+                {% endif %}
+                <h5>{{ user.username }}</h5>
+                <p>{{ user.email }}</p>
+                <p class="text-muted">
+                    Tham gia ngày: {{ user.date_joined|date:"d/m/Y" }}
+                </p>
+                {% if user.profile.bio %}
+                    <p>{{ user.profile.bio }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4>Cập nhật thông tin</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <h5 class="mb-3">Thông tin cơ bản</h5>
+                    <div class="form-group mb-3">
+                        <label for="{{ user_form.first_name.id_for_label }}">Tên</label>
+                        {{ user_form.first_name }}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="{{ user_form.last_name.id_for_label }}">Họ</label>
+                        {{ user_form.last_name }}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="{{ user_form.email.id_for_label }}">Email</label>
+                        {{ user_form.email }}
+                    </div>
+
+                    <h5 class="mt-4 mb-3">Hồ sơ mở rộng</h5>
+                    <div class="form-group mb-3">
+                        <label for="{{ profile_form.avatar.id_for_label }}">Ảnh đại diện</label>
+                        {{ profile_form.avatar }}
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="{{ profile_form.bio.id_for_label }}">Giới thiệu</label>
+                        {{ profile_form.bio }}
+                    </div>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

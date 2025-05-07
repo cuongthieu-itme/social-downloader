@@ -1,0 +1,195 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Đang tải xuống...{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <div class="hero-icon mb-3">
+                <i class="bi bi-cloud-download-fill text-primary" style="font-size: 3.5rem;"></i>
+            </div>
+            <h1 class="h3 fw-bold mt-3">Đang tải xuống</h1>
+            <p class="text-muted">Vui lòng đợi trong khi chúng tôi tải xuống nội dung của bạn</p>
+        </div>
+
+        <div class="card mb-5" data-aos="fade-up" data-aos-delay="100">
+            <div class="card-header">
+                <h2 class="my-2 text-white fs-4"><i class="bi bi-download me-2"></i>Tiến trình tải xuống</h2>
+            </div>
+            <div class="card-body p-4">
+                <div class="text-center mb-4">
+                    <div class="spinner-border text-primary loading-pulse" style="width: 3rem; height: 3rem;" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                </div>
+
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="download-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                         role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                        <span id="progress-text">0%</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info text-center mb-4">
+                    <h5><i class="bi bi-info-circle me-2"></i>Đang xử lý yêu cầu của bạn</h5>
+                    <p id="download-status-message">Đang tải xuống, vui lòng đợi...</p>
+                    <p class="small mb-0">Quá trình này có thể mất vài phút tùy thuộc vào kích thước file.</p>
+                </div>
+
+                <div class="d-flex justify-content-center">
+                    <a href="{% url 'downloader:home' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Trở về trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card d-none" id="error-card" data-aos="fade-up">
+            <div class="card-body p-4 text-center">
+                <div class="mb-4">
+                    <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 4rem;"></i>
+                </div>
+                <h3 class="mb-3">Đã xảy ra lỗi</h3>
+                <p id="error-message">Không thể tải xuống nội dung. Vui lòng thử lại sau.</p>
+                <div class="mt-4">
+                    <a href="{% url 'downloader:home' %}" class="btn btn-primary">
+                        <i class="bi bi-house me-2"></i>Trở về trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const progressBar = document.getElementById('download-progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const statusMessage = document.getElementById('download-status-message');
+    const errorCard = document.getElementById('error-card');
+    const errorMessage = document.getElementById('error-message');
+
+    const downloadId = '{{ download_id }}';
+    let pollingInterval = null;
+
+    function startProgressPolling() {
+        // Iniciar el polling para obtener actualizaciones de progreso
+        checkDownloadProgress(); // Verificar inmediatamente
+        pollingInterval = setInterval(checkDownloadProgress, 1000);
+    }
+
+    function checkDownloadProgress() {
+        if (!downloadId) return;
+
+        fetch(`/api/download-progress/${downloadId}/`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Download not found');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'downloading') {
+                    // Actualizar la barra de progreso
+                    setProgress(data.progress);
+                    statusMessage.textContent = `Đang tải xuống... ${data.progress}%`;
+                }
+                else if (data.status === 'completed') {
+                    // Descarga completada
+                    setProgress(100);
+                    statusMessage.textContent = 'Tải xuống hoàn tất!';
+                    clearInterval(pollingInterval);
+
+                    // Redireccionar a la página de preview
+                    setTimeout(() => {
+                        window.location.href = `/preview/${data.download_id}/`;
+                    }, 1500);
+                }
+                else if (data.status === 'error') {
+                    // Error en la descarga
+                    showError(data.error || 'Đã xảy ra lỗi khi tải xuống.');
+                    clearInterval(pollingInterval);
+                }
+            })
+            .catch(error => {
+                console.error('Error checking progress:', error);
+                showError('Không tìm thấy thông tin tải xuống. Nó có thể đã hoàn tất hoặc bị hủy.');
+                clearInterval(pollingInterval);
+            });
+    }
+
+    function setProgress(percent) {
+        progressBar.style.width = `${percent}%`;
+        progressBar.setAttribute('aria-valuenow', percent);
+        progressText.textContent = `${percent}%`;
+
+        // Cambiar color de la barra de progreso según el porcentaje
+        if (percent < 30) {
+            progressBar.classList.remove('bg-success', 'bg-info');
+            progressBar.classList.add('bg-primary');
+        } else if (percent < 70) {
+            progressBar.classList.remove('bg-primary', 'bg-success');
+            progressBar.classList.add('bg-info');
+        } else {
+            progressBar.classList.remove('bg-primary', 'bg-info');
+            progressBar.classList.add('bg-success');
+        }
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorCard.classList.remove('d-none');
+        document.querySelector('.card.mb-5').classList.add('d-none');
+    }
+
+    // Iniciar el polling cuando se carga la página
+    if (downloadId) {
+        startProgressPolling();
+    } else {
+        showError('No se especificó un ID de descarga');
+    }
+});
+</script>
+
+<style>
+.hero-icon {
+    display: inline-block;
+    background: linear-gradient(135deg, rgba(67, 97, 238, 0.1), rgba(58, 12, 163, 0.1));
+    width: 100px;
+    height: 100px;
+    line-height: 100px;
+    border-radius: 50%;
+    text-align: center;
+}
+
+.progress {
+    border-radius: 30px;
+    overflow: hidden;
+    background-color: #e9ecef;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    transition: width 0.3s ease;
+    font-weight: 600;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.loading-pulse {
+    animation: pulse 1.5s infinite;
+}
+</style>
+{% endblock %}

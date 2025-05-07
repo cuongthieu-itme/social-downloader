@@ -1,0 +1,968 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Lịch sử tải xuống{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* General styling */
+    body {
+        background-color: #f8f9fa;
+    }
+
+    .history-header {
+        margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    /* Media icon styling */
+    .media-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .audio-icon {
+        background: linear-gradient(135deg, rgba(13, 202, 240, 0.15), rgba(13, 202, 240, 0.05));
+        color: #0dcaf0;
+    }
+
+    .video-icon {
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15), rgba(67, 97, 238, 0.05));
+        color: var(--primary-color);
+    }
+
+    .mov-icon {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.05));
+        color: #ffc107;
+    }
+
+    /* Card styling */
+    .history-card {
+        position: relative;
+        border-radius: 16px;
+        background-color: #fff;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;
+        margin-bottom: 1.75rem;
+        border: none;
+    }
+
+    .history-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+
+    .history-card::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 5px;
+        background: linear-gradient(to bottom, var(--primary-color), var(--secondary-color));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .history-card:hover::before {
+        opacity: 1;
+    }
+
+    .history-card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        background-color: rgba(248, 249, 250, 0.3);
+    }
+
+    .history-card-body {
+        padding: 1.5rem;
+        min-height: 100px;
+    }
+
+    .history-card-footer {
+        padding: 1.25rem 1.5rem;
+        background-color: rgba(248, 249, 250, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    /* Text styling */
+    .history-title {
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        font-size: 1.15rem;
+    }
+
+    .history-url {
+        color: var(--secondary-color);
+        word-break: break-all;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        opacity: 0.8;
+        transition: var(--transition);
+    }
+
+    .history-url:hover {
+        opacity: 1;
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+
+    /* Metadata styling */
+    .history-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        margin-top: 1rem;
+    }
+
+    .history-meta-item {
+        display: flex;
+        align-items: center;
+        color: #6c757d;
+        padding: 0.35rem 0.75rem;
+        background-color: rgba(108, 117, 125, 0.05);
+        border-radius: 30px;
+        font-size: 0.85rem;
+    }
+
+    .history-meta-item i {
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    /* Filter card styling */
+    .filter-card {
+        background-color: #fff;
+        border-radius: 16px;
+        padding: 1.75rem;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        position: sticky;
+        top: 100px;
+    }
+
+    .filter-heading {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        color: var(--dark-color);
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .filter-heading i {
+        margin-right: 0.75rem;
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
+
+    .filter-form-group {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-form-group label {
+        font-weight: 500;
+        margin-bottom: 0.75rem;
+        display: block;
+        color: var(--dark-color);
+    }
+
+    /* Button styling */
+    .btn-action {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        background-color: #fff;
+        color: var(--dark-color);
+        border: 1px solid rgba(0,0,0,0.1);
+        margin-right: 0.75rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .btn-action:hover {
+        transform: translateY(-5px) scale(1.05);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .btn-action-view {
+        color: var(--primary-color);
+        border-color: rgba(67, 97, 238, 0.2);
+    }
+
+    .btn-action-view:hover {
+        background-color: var(--primary-color);
+        color: #fff;
+        border-color: var(--primary-color);
+    }
+
+    .btn-action-download {
+        color: var(--success-color);
+        border-color: rgba(56, 176, 0, 0.2);
+    }
+
+    .btn-action-download:hover {
+        background-color: var(--success-color);
+        color: #fff;
+        border-color: var(--success-color);
+    }
+
+    .btn-action-delete {
+        color: var(--danger-color);
+        border-color: rgba(239, 35, 60, 0.2);
+    }
+
+    .btn-action-delete:hover {
+        background-color: var(--danger-color);
+        color: #fff;
+        border-color: var(--danger-color);
+    }
+
+    .btn-action-edit {
+        color: #6f42c1;
+        border-color: rgba(111, 66, 193, 0.2);
+    }
+
+    .btn-action-edit:hover {
+        background-color: #6f42c1;
+        color: #fff;
+        border-color: #6f42c1;
+    }
+
+    /* Badge styling */
+    .badge-format {
+        font-size: 0.8rem;
+        padding: 0.5em 0.85em;
+        border-radius: 30px;
+        font-weight: 500;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 5rem 2rem;
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.5), rgba(255, 255, 255, 0.9));
+        border-radius: 16px;
+    }
+
+    .empty-state-icon {
+        font-size: 5.5rem;
+        color: #dee2e6;
+        margin-bottom: 2rem;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+
+    /* Toggle view buttons */
+    .history-grid-toggle {
+        display: flex;
+        align-items: center;
+        background-color: #f8f9fa;
+        border-radius: 50px;
+        padding: 0.35rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .history-grid-toggle-btn {
+        border: none;
+        background: transparent;
+        padding: 0.65rem 0.85rem;
+        border-radius: 50px;
+        cursor: pointer;
+        color: #6c757d;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    .history-grid-toggle-btn.active {
+        background-color: #fff;
+        color: var(--primary-color);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    /* Grid view styling */
+    .download-grid-mode .history-card {
+        margin-bottom: 0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .download-grid-mode .history-card-body {
+        flex: 1;
+        min-height: 120px;
+    }
+
+    .download-grid-mode .history-card-footer {
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+
+    /* Custom scrollbar */
+    .list-view-container::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .list-view-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .list-view-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+
+    .list-view-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .history-card {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    /* Media queries */
+    @media (max-width: 992px) {
+        .filter-card {
+            position: static;
+            margin-bottom: 2rem;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .history-meta {
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .history-card-body {
+            padding: 1.25rem;
+        }
+
+        .history-card-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .history-card-header .media-icon {
+            margin-bottom: 1rem;
+        }
+
+        .history-card-header .ms-3 {
+            margin-left: 0 !important;
+            margin-top: 1rem;
+        }
+    }
+
+    /* Toast styling */
+    .toast-container {
+        z-index: 1060;
+    }
+
+    .toast {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        margin-bottom: 0.5rem;
+    }
+
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+        background-color: rgba(248, 249, 250, 0.8);
+    }
+
+    .modal-footer {
+        border-top: 1px solid rgba(0,0,0,0.05);
+        background-color: rgba(248, 249, 250, 0.8);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-11 col-xl-10">
+            <div class="history-header d-flex justify-content-between align-items-center flex-wrap" data-aos="fade-up">
+                <div>
+                    <h1 class="h3 fw-bold mb-2">
+                        <i class="bi bi-clock-history text-primary me-2"></i>Lịch sử tải xuống
+                    </h1>
+                    <p class="text-muted mb-0">Quản lý tất cả các file bạn đã tải xuống</p>
+                </div>
+                <div class="d-flex mt-3 mt-md-0">
+                    <div class="history-grid-toggle me-3">
+                        <button type="button" class="history-grid-toggle-btn active" id="listViewBtn" aria-label="List view">
+                            <i class="bi bi-list"></i>
+                        </button>
+                        <button type="button" class="history-grid-toggle-btn" id="gridViewBtn" aria-label="Grid view">
+                            <i class="bi bi-grid-3x3-gap"></i>
+                        </button>
+                    </div>
+                    <a href="{% url 'downloader:home' %}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Tải video mới
+                    </a>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-3 mb-4">
+                    <div class="filter-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="filter-heading">
+                            <i class="bi bi-funnel-fill"></i> Bộ lọc
+                        </div>
+
+                        <div class="filter-form-group">
+                            <label class="form-label">Tìm kiếm</label>
+                            <div class="input-group">
+                                <input type="text" id="searchInput" class="form-control" placeholder="Nhập từ khóa...">
+                                <button class="btn btn-outline-primary" type="button" aria-label="Search">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="filter-form-group">
+                            <label class="form-label">Định dạng</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input format-filter" type="checkbox" value="all" id="format-all" checked>
+                                    <label class="form-check-label" for="format-all">
+                                        Tất cả
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input format-filter" type="checkbox" value="mp4" id="format-mp4">
+                                    <label class="form-check-label" for="format-mp4">
+                                        MP4
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input format-filter" type="checkbox" value="mp3" id="format-mp3">
+                                    <label class="form-check-label" for="format-mp3">
+                                        MP3
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input format-filter" type="checkbox" value="mov" id="format-mov">
+                                    <label class="form-check-label" for="format-mov">
+                                        MOV
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="filter-form-group">
+                            <label class="form-label">Sắp xếp theo</label>
+                            <select class="form-select" id="sortOrder">
+                                <option value="newest">Mới nhất trước</option>
+                                <option value="oldest">Cũ nhất trước</option>
+                                <option value="name-asc">Tên (A-Z)</option>
+                                <option value="name-desc">Tên (Z-A)</option>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary w-100 mt-3">
+                            <i class="bi bi-filter-circle me-2"></i>Áp dụng
+                        </button>
+                    </div>
+                </div>
+
+                <div class="col-lg-9">
+                    {% if downloads %}
+                    <div class="download-container" id="downloadContainer">
+                        <div class="list-view-container">
+                            {% for download in downloads %}
+                            <div class="history-card" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:100 }}" data-format="{{ download.format }}">
+                                <div class="history-card-header">
+                                    <div class="media-icon {% if download.format == 'mp3' %}audio-icon{% elif download.format == 'mov' %}mov-icon{% else %}video-icon{% endif %} me-3">
+                                        {% if download.format == 'mp3' %}
+                                            <i class="bi bi-file-earmark-music" style="font-size: 1.5rem;"></i>
+                                        {% elif download.format == 'mov' %}
+                                            <i class="bi bi-camera-reels" style="font-size: 1.5rem;"></i>
+                                        {% else %}
+                                            <i class="bi bi-file-earmark-play" style="font-size: 1.5rem;"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-grow-1 min-width-0">
+                                        <h5 class="history-title text-truncate">{{ download.title|default:"Unknown" }}</h5>
+                                        <a href="{{ download.url }}" target="_blank" class="history-url small">
+                                            {{ download.url }}
+                                        </a>
+                                    </div>
+                                    <div class="ms-3">
+                                        <span class="badge badge-format {% if download.format == 'mp3' %}bg-info{% elif download.format == 'mov' %}bg-warning text-dark{% else %}bg-primary{% endif %}">
+                                            {{ download.format|upper }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="history-card-body">
+                                    <div class="history-meta">
+                                        <div class="history-meta-item">
+                                            <i class="bi bi-calendar3"></i>
+                                            <span>{{ download.created_at|date:"d/m/Y" }}</span>
+                                        </div>
+                                        <div class="history-meta-item">
+                                            <i class="bi bi-clock"></i>
+                                            <span>{{ download.created_at|date:"H:i:s" }}</span>
+                                        </div>
+                                        {% if download.filesize %}
+                                        <div class="history-meta-item">
+                                            <i class="bi bi-file-earmark"></i>
+                                            <span>{{ download.filesize }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="history-card-footer">
+                                    <div>
+                                        <a href="javascript:void(0)" class="text-decoration-none">
+                                            <small class="text-muted">ID: {{ download.id }}</small>
+                                        </a>
+                                    </div>
+                                    <div class="d-flex">
+                                        {% if download.file_path %}
+                                        <a href="{% url 'downloader:preview' download.id %}" class="btn-action btn-action-view" data-bs-toggle="tooltip" title="Xem">
+                                            <i class="bi bi-play-circle"></i>
+                                        </a>
+                                        <a href="{% url 'downloader:download_file' download.id %}" class="btn-action btn-action-download" data-bs-toggle="tooltip" title="Tải xuống">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        <a href="{% url 'downloader:edit' download.id %}" class="btn-action btn-action-edit" data-bs-toggle="tooltip" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="#" class="btn-action btn-action-delete delete-btn" data-id="{{ download.id }}" data-bs-toggle="tooltip" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                        {% else %}
+                                        <span class="badge bg-warning text-dark">File đã bị xóa</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card border-0 shadow-lg" data-aos="zoom-in">
+                        <div class="card-body empty-state">
+                            <div class="empty-state-icon">
+                                <i class="bi bi-cloud-slash"></i>
+                            </div>
+                            <h4 class="fw-bold">Chưa có lịch sử tải xuống</h4>
+                            <p class="text-muted mb-4">Hãy bắt đầu tải xuống video hoặc âm thanh từ YouTube và các trang web khác.</p>
+                            <a href="{% url 'downloader:home' %}" class="btn btn-primary btn-lg pulse-on-hover">
+                                <i class="bi bi-download me-2"></i>Tải video đầu tiên
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 3rem;"></i>
+                </div>
+                <p>Bạn có chắc chắn muốn xóa file này? Hành động này không thể hoàn tác.</p>
+                <p class="fw-bold mb-0">File: <span id="deleteFileName">Unknown</span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash me-1"></i> Xóa
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl, {
+                delay: { show: 300, hide: 100 }
+            });
+        });
+
+        // Xử lý nút xóa và modal xác nhận
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        let deleteId = null;
+        let deleteCard = null;
+
+        // Khi click vào nút xóa
+        document.querySelectorAll('.delete-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                // Lấy thông tin về file sẽ xóa
+                deleteId = this.getAttribute('data-id');
+                deleteCard = this.closest('.history-card');
+                const fileName = deleteCard.querySelector('.history-title').textContent;
+
+                // Cập nhật modal
+                document.getElementById('deleteFileName').textContent = fileName;
+
+                // Hiển thị modal xác nhận
+                deleteModal.show();
+            });
+        });
+
+        // Khi click nút xác nhận xóa trong modal
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (deleteId && deleteCard) {
+                // Gửi request AJAX để xóa
+                fetch(`/api/download/${deleteId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Nếu xóa thành công
+                    if (data.success) {
+                        // Hiệu ứng xóa card
+                        deleteCard.style.opacity = '0';
+                        deleteCard.style.transform = 'translateX(20px) scale(0.95)';
+                        setTimeout(() => {
+                            deleteCard.remove();
+
+                            // Kiểm tra nếu không còn file nào thì hiển thị thông báo trống
+                            if (document.querySelectorAll('.history-card').length === 0) {
+                                const container = document.getElementById('downloadContainer');
+                                container.innerHTML = `
+                                <div class="card border-0 shadow-lg" data-aos="zoom-in">
+                                    <div class="card-body empty-state">
+                                        <div class="empty-state-icon">
+                                            <i class="bi bi-cloud-slash"></i>
+                                        </div>
+                                        <h4 class="fw-bold">Chưa có lịch sử tải xuống</h4>
+                                        <p class="text-muted mb-4">Hãy bắt đầu tải xuống video hoặc âm thanh từ YouTube và các trang web khác.</p>
+                                        <a href="{% url 'downloader:home' %}" class="btn btn-primary btn-lg pulse-on-hover">
+                                            <i class="bi bi-download me-2"></i>Tải video đầu tiên
+                                        </a>
+                                    </div>
+                                </div>`;
+                            }
+
+                            // Hiển thị thông báo thành công
+                            showToast('Thành công', 'Đã xóa file thành công', 'success');
+                        }, 300);
+
+                        // Đóng modal
+                        deleteModal.hide();
+                    } else {
+                        // Hiển thị lỗi
+                        showToast('Lỗi', data.message || 'Có lỗi xảy ra khi xóa file', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Lỗi', 'Không thể kết nối đến máy chủ', 'error');
+                });
+            }
+        });
+
+        // Tìm kiếm
+        document.getElementById('searchInput')?.addEventListener('keyup', function() {
+            const input = this.value.toLowerCase();
+            const cards = document.querySelectorAll('.history-card');
+
+            cards.forEach(function(card) {
+                const title = card.querySelector('.history-title').textContent.toLowerCase();
+                const url = card.querySelector('.history-url').textContent.toLowerCase();
+
+                if (title.includes(input) || url.includes(input)) {
+                    card.style.display = "";
+                    setTimeout(() => {
+                        card.style.opacity = "1";
+                        card.style.transform = "translateY(0)";
+                    }, 50);
+                } else {
+                    card.style.opacity = "0";
+                    card.style.transform = "translateY(20px)";
+                    setTimeout(() => {
+                        card.style.display = "none";
+                    }, 300);
+                }
+            });
+        });
+
+        // Chuyển đổi chế độ xem
+        const container = document.getElementById('downloadContainer');
+        const listViewBtn = document.getElementById('listViewBtn');
+        const gridViewBtn = document.getElementById('gridViewBtn');
+
+        listViewBtn.addEventListener('click', function() {
+            container.classList.remove('download-grid-mode');
+            container.classList.add('download-list-mode');
+            listViewBtn.classList.add('active');
+            gridViewBtn.classList.remove('active');
+
+            // Save preference to localStorage
+            localStorage.setItem('viewPreference', 'list');
+        });
+
+        gridViewBtn.addEventListener('click', function() {
+            container.classList.add('download-grid-mode');
+            container.classList.remove('download-list-mode');
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+
+            // Save preference to localStorage
+            localStorage.setItem('viewPreference', 'grid');
+
+            // Create grid layout
+            createGridLayout();
+        });
+
+        function createGridLayout() {
+            const cards = document.querySelectorAll('.history-card');
+            const listContainer = document.querySelector('.list-view-container');
+
+            // Clear current content
+            listContainer.innerHTML = '';
+
+            // Create grid container
+            const gridRow = document.createElement('div');
+            gridRow.className = 'row g-4';
+            listContainer.appendChild(gridRow);
+
+            // Add cards to grid
+            cards.forEach(function(card, index) {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-xl-6 mb-4';
+
+                // Clone the card and add animation
+                const clonedCard = card.cloneNode(true);
+                clonedCard.style.animationDelay = `${index * 0.1}s`;
+
+                col.appendChild(clonedCard);
+                gridRow.appendChild(col);
+
+                // Re-attach event listeners to the new button
+                const deleteBtn = clonedCard.querySelector('.delete-btn');
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        if (confirm('Bạn có chắc chắn muốn xóa mục này?')) {
+                            const card = this.closest('.history-card');
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(20px) scale(0.95)';
+                            setTimeout(() => {
+                                card.style.display = 'none';
+                            }, 300);
+                        }
+                    });
+                }
+            });
+
+            // Reinitialize tooltips
+            const newTooltipTriggers = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            newTooltipTriggers.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    delay: { show: 300, hide: 100 }
+                });
+            });
+        }
+
+        // Format filter functionality
+        document.querySelectorAll('.format-filter').forEach(function(filter) {
+            filter.addEventListener('change', function() {
+                // If "All" is checked, uncheck other formats
+                if (this.value === 'all' && this.checked) {
+                    document.querySelectorAll('.format-filter:not([value="all"])').forEach(function(otherFilter) {
+                        otherFilter.checked = false;
+                    });
+                }
+                // If a specific format is checked, uncheck "All"
+                else if (this.value !== 'all' && this.checked) {
+                    document.getElementById('format-all').checked = false;
+                }
+
+                // If no format is checked, check "All" again
+                const hasChecked = Array.from(document.querySelectorAll('.format-filter')).some(f => f.checked);
+                if (!hasChecked) {
+                    document.getElementById('format-all').checked = true;
+                }
+
+                // Filter cards based on selected formats
+                filterCards();
+            });
+
+        });
+
+        // Sort functionality
+        document.getElementById('sortOrder')?.addEventListener('change', function() {
+            sortCards(this.value);
+        });
+
+        function filterCards() {
+            const allChecked = document.getElementById('format-all').checked;
+            const formats = Array.from(document.querySelectorAll('.format-filter:checked'))
+                .filter(f => f.value !== 'all')
+                .map(f => f.value);
+
+            document.querySelectorAll('.history-card').forEach(function(card) {
+                const format = card.getAttribute('data-format');
+                if (allChecked || formats.includes(format)) {
+                    card.style.display = '';
+                    setTimeout(() => {
+                        card.style.opacity = "1";
+                        card.style.transform = "translateY(0)";
+                    }, 50);
+                } else {
+                    card.style.opacity = "0";
+                    card.style.transform = "translateY(20px)";
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 300);
+                }
+            });
+        }
+
+        function sortCards(sortOrder) {
+            const container = document.querySelector('.list-view-container');
+            const cards = Array.from(container.querySelectorAll('.history-card'));
+
+            cards.sort(function(a, b) {
+                const titleA = a.querySelector('.history-title').textContent.trim().toLowerCase();
+                const titleB = b.querySelector('.history-title').textContent.trim().toLowerCase();
+
+                if (sortOrder === 'name-asc') {
+                    return titleA.localeCompare(titleB);
+                } else if (sortOrder === 'name-desc') {
+                    return titleB.localeCompare(titleA);
+                }
+                // Add more sorting criteria here (like date)
+
+                return 0;
+            });
+
+            // Remove current cards
+            cards.forEach(card => card.remove());
+
+            // Add sorted cards with staggered animation
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                container.appendChild(card);
+            });
+        }
+
+        // Load view preference from localStorage
+        const savedViewPreference = localStorage.getItem('viewPreference');
+        if (savedViewPreference === 'grid') {
+            gridViewBtn.click();
+        }
+
+        // Function hiển thị toast thông báo
+        function showToast(title, message, type = 'info') {
+            // Tạo toast container nếu chưa có
+            let toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(toastContainer);
+            }
+
+            // Tạo toast
+            const toastId = 'toast-' + Date.now();
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type === 'error' ? 'danger' : type}`;
+            toast.id = toastId;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+
+            // Nội dung toast
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}</strong>: ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            // Thêm toast vào container
+            toastContainer.appendChild(toast);
+
+            // Hiển thị toast
+            const bsToast = new bootstrap.Toast(toast, {
+                animation: true,
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+
+            // Xóa toast sau khi ẩn
+            toast.addEventListener('hidden.bs.toast', function() {
+                toast.remove();
+            });
+        }
+    });
+</script>
+{% endblock %}
+

@@ -1,0 +1,52 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Lỗi{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="text-center mb-5">
+            <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+            <h1 class="mt-4 mb-3">Đã xảy ra lỗi</h1>
+        </div>
+
+        <div class="card border-0 shadow">
+            <div class="card-body p-5">
+                <div class="error-details p-4 bg-light rounded mb-4">
+                    <h5 class="text-danger mb-3">
+                        <i class="bi bi-info-circle me-2"></i>Thông tin lỗi:
+                    </h5>
+                    <p class="lead mb-0">{{ error }}</p>
+                </div>
+
+                <div class="error-solutions mb-4">
+                    <h5 class="mb-3">Giải pháp có thể:</h5>
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item bg-transparent ps-0">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>Kiểm tra xem URL video có chính xác không
+                        </li>
+                        <li class="list-group-item bg-transparent ps-0">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>Thử định dạng khác (MP4, MOV, hoặc MP3)
+                        </li>
+                        <li class="list-group-item bg-transparent ps-0">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>Kiểm tra kết nối internet của bạn
+                        </li>
+                        <li class="list-group-item bg-transparent ps-0">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>URL của video có thể không hỗ trợ hoặc có giới hạn tải xuống
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="d-grid gap-3">
+                    <a href="{% url 'downloader:home' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-fill me-2"></i>Quay lại trang chủ
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="history.back()">
+                        <i class="bi bi-arrow-left me-2"></i>Quay lại trang trước
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

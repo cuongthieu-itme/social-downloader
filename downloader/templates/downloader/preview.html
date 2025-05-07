@@ -1,0 +1,179 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Xem trước: {{ download.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10 col-md-12">
+        <!-- Breadcrumb navigation -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'downloader:home' %}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Xem trước</li>
+            </ol>
+        </nav>
+
+        <div class="card border-0 shadow-lg overflow-hidden">
+            <div class="card-header">
+                <div class="d-flex align-items-center">
+                    {% if download.format == 'mp3' %}
+                        <i class="bi bi-file-earmark-music text-white me-3" style="font-size: 1.5rem;"></i>
+                    {% else %}
+                        <i class="bi bi-file-earmark-play text-white me-3" style="font-size: 1.5rem;"></i>
+                    {% endif %}
+                    <h2 class="my-2 text-white text-truncate fs-4">{{ download.title }}</h2>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="player-wrapper bg-dark p-4 text-center">
+                    {% if download.format == 'mp3' %}
+                        <!-- Audio player cho MP3 với visualizer -->
+                        <div class="py-4">
+                            <div class="mb-4">
+                                <i class="bi bi-music-note-beamed text-primary" style="font-size: 4rem;"></i>
+                            </div>
+                            <div class="audio-player-container">
+                                <audio controls class="w-100 custom-audio-player">
+                                    <source src="{% url 'downloader:media_file' download.id %}" type="audio/mpeg">
+                                    Trình duyệt của bạn không hỗ trợ phát audio.
+                                </audio>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Video player cho MP4/MOV với controls tùy chỉnh -->
+                        <div class="ratio ratio-16x9 mb-0">
+                            <video controls preload="metadata" poster="" class="custom-video-player">
+                                <source src="{% url 'downloader:media_file' download.id %}" type="video/{{ download.format }}">
+                                Trình duyệt của bạn không hỗ trợ phát video.
+                            </video>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="p-4">
+                    <div class="row g-4">
+                        <div class="col-md-8">
+                            <h5 class="mb-3">Thông tin chi tiết</h5>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <tbody>
+                                        <tr>
+                                            <th style="width: 30%;">
+                                                <i class="bi bi-info-circle me-2"></i>Tiêu đề
+                                            </th>
+                                            <td>{{ download.title }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>
+                                                <i class="bi bi-tag me-2"></i>Định dạng
+                                            </th>
+                                            <td>
+                                                <span class="badge {% if download.format == 'mp3' %}bg-info{% else %}bg-primary{% endif %}">
+                                                    {{ download.format|upper }}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>
+                                                <i class="bi bi-clock me-2"></i>Thời gian tải
+                                            </th>
+                                            <td>{{ download.created_at|date:"d/m/Y, H:i:s" }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>
+                                                <i class="bi bi-link me-2"></i>Nguồn
+                                            </th>
+                                            <td>
+                                                <a href="{{ download.url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 100%;">
+                                                    {{ download.url }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h5 class="mb-3">Hành động</h5>
+                            <div class="d-grid gap-3">
+                                <a href="{% url 'downloader:download_file' download.id %}" class="btn btn-success btn-lg" id="download-btn" target="_blank" download="{{ download.title }}">
+                                    <i class="bi bi-download me-2"></i> Tải xuống
+                                </a>
+                                <a href="{% url 'downloader:edit' download.id %}" class="btn btn-warning">
+                                    <i class="bi bi-pencil-square me-2"></i> Chỉnh sửa thông tin
+                                </a>
+                                <a href="{% url 'downloader:home' %}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-2"></i> Tải video khác
+                                </a>
+                                <a href="{% url 'downloader:history' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-clock-history me-2"></i> Lịch sử tải xuống
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1050">
+    <div id="downloadToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header bg-success text-white">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong class="me-auto">Đang tải xuống</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <p>File <strong>{{ download.title }}</strong> đang được tải xuống.</p>
+            <p class="mb-0 small">Vui lòng kiểm tra thư mục Downloads của bạn.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-video-player, .custom-audio-player {
+        border-radius: 10px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .player-wrapper {
+        border-radius: 0;
+    }
+
+    /* Custom styling for audio player */
+    audio::-webkit-media-controls-panel {
+        background-color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .table th {
+            width: 40% !important;
+        }
+    }
+
+    /* Toast styling */
+    .toast {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const downloadBtn = document.getElementById('download-btn');
+
+    downloadBtn.addEventListener('click', function() {
+        // Show toast notification
+        const toast = new bootstrap.Toast(document.getElementById('downloadToast'));
+        toast.show();
+
+        // Opcional: agregar un breve retraso para mejor UX
+        setTimeout(() => {
+            // El archivo se descargará automáticamente debido al atributo download y target="_blank"
+        }, 200);
+    });
+});
+</script>
+{% endblock %}

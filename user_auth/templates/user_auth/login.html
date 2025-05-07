@@ -1,0 +1,43 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Đăng nhập - YouTube Downloader{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h2>Đăng nhập</h2>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group mb-3">
+                <label for="{{ form.username.id_for_label }}">Tên đăng nhập</label>
+                {{ form.username }}
+                {% if form.username.errors %}
+                    <div class="text-danger">
+                        {{ form.username.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="{{ form.password.id_for_label }}">Mật khẩu</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                    <div class="text-danger">
+                        {{ form.password.errors }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary">Đăng nhập</button>
+            </div>
+        </form>
+    </div>
+    <div class="card-footer text-center">
+        <p class="mb-0">Chưa có tài khoản? <a href="{% url 'user_auth:register' %}">Đăng ký ngay</a></p>
+    </div>
+</div>
+{% endblock %}

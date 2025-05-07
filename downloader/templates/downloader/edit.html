@@ -1,0 +1,125 @@
+{% extends 'downloader/base.html' %}
+
+{% block title %}Chỉnh sửa - {{ download.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="mb-4" data-aos="fade-up">
+                <a href="{% url 'downloader:history' %}" class="btn btn-outline-primary mb-3">
+                    <i class="bi bi-arrow-left me-2"></i>Quay lại lịch sử
+                </a>
+                <h1 class="h3 fw-bold mb-2">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh sửa thông tin
+                </h1>
+                <p class="text-muted">Chỉnh sửa thông tin cho video/audio đã tải xuống.</p>
+            </div>
+
+            <div class="card border-0 shadow-lg" data-aos="fade-up" data-aos-delay="100">
+                <div class="card-header">
+                    <h5 class="my-2 text-white">
+                        <i class="bi bi-file-earmark-text me-2"></i>Thông tin file
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" id="edit-form">
+                        {% csrf_token %}
+
+                        <div class="mb-4">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="media-icon {% if download.format == 'mp3' %}audio-icon{% elif download.format == 'mov' %}mov-icon{% else %}video-icon{% endif %} me-3">
+                                    {% if download.format == 'mp3' %}
+                                        <i class="bi bi-file-earmark-music" style="font-size: 1.5rem;"></i>
+                                    {% elif download.format == 'mov' %}
+                                        <i class="bi bi-camera-reels" style="font-size: 1.5rem;"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark-play" style="font-size: 1.5rem;"></i>
+                                    {% endif %}
+                                </div>
+                                <span class="badge {% if download.format == 'mp3' %}bg-info{% elif download.format == 'mov' %}bg-warning text-dark{% else %}bg-primary{% endif %}">
+                                    {{ download.format|upper }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="title" class="form-label fw-semibold">Tiêu đề</label>
+                            <input type="text" class="form-control" id="title" name="title" value="{{ download.title }}" required>
+                            <div class="form-text">Đặt tiêu đề mô tả nội dung của file.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">URL gốc</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" value="{{ download.url }}" readonly>
+                                <a href="{{ download.url }}" target="_blank" class="btn btn-outline-secondary">
+                                    <i class="bi bi-box-arrow-up-right"></i>
+                                </a>
+                            </div>
+                            <div class="form-text">URL nguồn của video/audio.</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Ngày tạo</label>
+                            <input type="text" class="form-control" value="{{ download.created_at|date:'d/m/Y H:i' }}" readonly>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'downloader:preview' download.id %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Hủy
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check2-circle me-2"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .media-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+
+    .audio-icon {
+        background: linear-gradient(135deg, rgba(13, 202, 240, 0.15), rgba(13, 202, 240, 0.05));
+        color: #0dcaf0;
+    }
+
+    .video-icon {
+        background: linear-gradient(135deg, rgba(67, 97, 238, 0.15), rgba(67, 97, 238, 0.05));
+        color: var(--primary-color);
+    }
+
+    .mov-icon {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.15), rgba(255, 193, 7, 0.05));
+        color: #ffc107;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.25);
+    }
+
+    .card {
+        border-radius: 16px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        padding: 1.25rem 1.5rem;
+    }
+</style>
+{% endblock %}
