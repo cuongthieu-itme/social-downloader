@@ -58,6 +58,40 @@
    python manage.py runserver
    ```
 
+## Deployment lên Render
+
+1. Đăng ký tài khoản trên [Render](https://render.com)
+
+2. Tạo file cấu hình cần thiết (đã có trong repo):
+   - `build.sh`: Script cài đặt
+   - `Procfile`: Định nghĩa cách chạy ứng dụng
+   - Cập nhật `settings.py` để hỗ trợ môi trường production
+   - Tạo file `.env` từ mẫu `.env-sample`
+
+3. Trong trang Dashboard của Render:
+   - Chọn "New" > "Web Service"
+   - Kết nối với GitHub và chọn repository của bạn
+   - Đặt tên cho ứng dụng
+   - Chọn "Python" làm Runtime
+   - Đảm bảo Build Command là `./build.sh` và Start Command là `gunicorn youtube_downloader.wsgi`
+   - Chọn Free plan hoặc paid plan tùy nhu cầu
+
+4. Thiết lập các biến môi trường (Environment Variables):
+   - `SECRET_KEY`: Khóa bí mật cho Django
+   - `DEBUG`: Đặt là `False` cho môi trường production
+   - `ALLOWED_HOSTS`: Thêm tên miền ứng dụng của bạn trên Render
+
+5. Nhấn "Create Web Service" và đợi deployment hoàn tất
+
+6. Đối với FFmpeg:
+   - Render cần cấu hình thêm cho FFmpeg.
+   - Thêm vào Advanced Settings > Startup Command:
+   ```bash
+   apt-get update && apt-get install -y ffmpeg && gunicorn youtube_downloader.wsgi
+   ```
+
+7. Sau khi deployment thành công, ứng dụng của bạn sẽ có sẵn tại URL được cung cấp
+
 ## Cấu trúc dự án
 
 ```
