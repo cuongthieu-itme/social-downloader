@@ -7,14 +7,14 @@
 - Tải xuống video từ YouTube với nhiều định dạng
 - Trích xuất âm thanh từ video dưới dạng MP3
 - Xem trước nội dung video trước khi tải xuống
-- Hệ thống đăng nhập và đăng ký người dùng
-- Lưu lịch sử tải xuống của người dùng
+- Lưu lịch sử tải xuống
+- Quản lý và chỉnh sửa video đã tải xuống
 
 ## Yêu cầu
 
 - Python 3.8+
 - Django 4.2.7
-- yt-dlp 2023.7.6
+- yt-dlp
 - FFmpeg
 - Các thư viện khác được liệt kê trong requirements.txt
 
@@ -48,7 +48,7 @@
    python manage.py migrate
    ```
 
-6. Tạo tài khoản admin:
+6. Tạo tài khoản admin (tùy chọn):
    ```
    python manage.py createsuperuser
    ```
@@ -66,49 +66,65 @@ youtube-ai/
 │   ├── migrations/          # Database migrations
 │   ├── static/              # Static files cho downloader
 │   ├── templates/           # HTML templates
+│   │   └── downloader/      # Template cho các trang của ứng dụng
+│   │       ├── base.html    # Template cơ sở
+│   │       ├── home.html    # Trang chủ/tải xuống
+│   │       ├── preview.html # Xem trước video
+│   │       ├── progress.html# Theo dõi tiến trình tải xuống
+│   │       ├── history.html # Lịch sử tải xuống
+│   │       ├── edit.html    # Chỉnh sửa video
+│   │       └── error.html   # Trang thông báo lỗi
 │   ├── admin.py             # Cấu hình admin
 │   ├── apps.py              # Cấu hình ứng dụng
-│   ├── forms.py             # Form tải xuống
+│   ├── forms.py             # Form tải xuống và xử lý
 │   ├── models.py            # Model lưu lịch sử tải xuống
 │   ├── tests.py             # Unit tests
 │   ├── urls.py              # URL routing
 │   ├── utils.py             # Các hàm tiện ích để tải video
 │   └── views.py             # Views xử lý tải xuống
 │
-├── user_auth/               # Ứng dụng xác thực người dùng
-│   ├── migrations/
-│   ├── templates/           # Templates đăng nhập/đăng ký
-│   ├── admin.py
-│   ├── apps.py
-│   ├── forms.py             # Forms đăng nhập/đăng ký
-│   ├── models.py            # Mô hình người dùng
-│   ├── tests.py
-│   ├── urls.py              # URL routing xác thực
-│   └── views.py             # Views xác thực
-│
 ├── youtube_downloader/      # Cấu hình chính của dự án
-│   ├── asgi.py
+│   ├── asgi.py              # ASGI config
 │   ├── settings.py          # Cài đặt dự án
 │   ├── urls.py              # URL routing chính
-│   └── wsgi.py
+│   └── wsgi.py              # WSGI config
 │
-├── static/                  # Static files chung
+├── static/                  # Static files chung (CSS, JS, Images)
 │
 ├── media/                   # Thư mục lưu file tải xuống
 │
 ├── db.sqlite3               # Cơ sở dữ liệu SQLite
 ├── manage.py                # Script quản lý Django
 ├── requirements.txt         # Danh sách thư viện cần thiết
-└── README.md
+└── README.md                # Tài liệu dự án
 ```
 
 ## Cách sử dụng
 
-1. Đăng ký tài khoản hoặc đăng nhập nếu đã có tài khoản
+1. Truy cập trang chủ của ứng dụng
 2. Nhập URL video YouTube vào form
 3. Chọn định dạng tải xuống (video hoặc âm thanh)
 4. Nhấn nút "Tải xuống" và đợi quá trình hoàn tất
-5. File được tải xuống sẽ có sẵn trong trình duyệt để lưu về máy
+5. File được tải xuống sẽ có sẵn để lưu về máy
+6. Xem và quản lý lịch sử tải xuống trong phần "Lịch sử"
+
+## Các chức năng chính
+
+### Tải xuống video
+- Hỗ trợ nhiều định dạng video (mp4, webm)
+- Tùy chọn chất lượng video (360p, 720p, 1080p, ...)
+
+### Tải xuống âm thanh
+- Trích xuất âm thanh từ video dưới dạng mp3
+- Tùy chọn chất lượng âm thanh
+
+### Xem trước
+- Xem thông tin video trước khi tải xuống
+- Kiểm tra video có sẵn cho tải xuống hay không
+
+### Lịch sử tải xuống
+- Theo dõi video đã tải xuống trước đó
+- Xem, quản lý và tải xuống lại video từ lịch sử
 
 ## Đóng góp
 
