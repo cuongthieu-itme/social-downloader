@@ -38,6 +38,98 @@
                     </div>
                 </div>
 
+                <!-- Video Info Preview -->
+                <div id="video-info-container" style="display: none;" class="mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="video-thumbnail-container mb-3 mb-md-0">
+                                        <img id="video-thumbnail" src="" alt="Video thumbnail" class="img-fluid rounded">
+                                        <div class="video-duration" id="video-duration"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <h5 id="video-title" class="mb-2"></h5>
+                                    <div class="d-flex align-items-center mb-3">
+                                        <span class="badge bg-primary me-2">
+                                            <i class="bi bi-check-circle-fill me-1"></i>URL Xác nhận
+                                        </span>
+                                    </div>
+                                    <div id="loading-formats" class="text-center" style="display: none;">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                            <span class="visually-hidden">Đang tải...</span>
+                                        </div>
+                                        <span>Đang phân tích định dạng có sẵn...</span>
+                                    </div>
+                                    <div class="d-grid">
+                                        <button type="button" id="check-formats-btn" class="btn btn-outline-primary">
+                                            <i class="bi bi-list-check me-2"></i>Kiểm tra định dạng có sẵn
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Formats section -->
+                <div id="available-formats-container" style="display: none;" class="mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="bi bi-card-list me-2"></i>Các định dạng có sẵn</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="formats-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="video-tab" data-bs-toggle="tab" data-bs-target="#video-formats" type="button" role="tab" aria-controls="video-formats" aria-selected="true">Video</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="audio-tab" data-bs-toggle="tab" data-bs-target="#audio-formats" type="button" role="tab" aria-controls="audio-formats" aria-selected="false">Audio</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content pt-3" id="formats-tabs-content">
+                                <div class="tab-pane fade show active" id="video-formats" role="tabpanel" aria-labelledby="video-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Định dạng</th>
+                                                    <th>Độ phân giải</th>
+                                                    <th>Kích thước</th>
+                                                    <th>Mã định dạng</th>
+                                                    <th>Tải xuống</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="video-formats-table">
+                                                <!-- Will be populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="audio-formats" role="tabpanel" aria-labelledby="audio-tab">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Định dạng</th>
+                                                    <th>Bitrate</th>
+                                                    <th>Kích thước</th>
+                                                    <th>Mã định dạng</th>
+                                                    <th>Tải xuống</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="audio-formats-table">
+                                                <!-- Will be populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Download Form -->
                 <form method="post" id="download-form" class="needs-validation" novalidate>
                     {% csrf_token %}
@@ -59,38 +151,97 @@
                         <label class="form-label fw-bold">
                             <i class="bi bi-film me-2"></i>Chọn định dạng
                         </label>
-                        <div class="row g-3 mt-1">
-                            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="150">
-                                <div class="card h-100 format-card">
-                                    <input type="radio" id="format_mp4" name="{{ form.format.html_name }}" value="mp4"
-                                        class="form-check-input visually-hidden format-radio" {% if form.format.value == 'mp4' %}checked{% endif %}>
-                                    <label for="format_mp4" class="card-body text-center py-4">
-                                        <i class="bi bi-film text-primary mb-3" style="font-size: 2rem;"></i>
-                                        <h5 class="card-title mb-0">Video MP4</h5>
-                                        <div class="mt-2 small text-muted">Định dạng phổ biến nhất</div>
+                        <div class="row g-3 mt-1" id="format-options">
+                            {% for value, text in form.format.field.choices %}
+                            <div class="col-md-3 col-6" data-aos="zoom-in" data-aos-delay="{{ forloop.counter|add:150 }}">
+                                <div class="card h-100 format-card format-{{ value }}">
+                                    <input type="radio" id="format_{{ value }}" name="{{ form.format.html_name }}" value="{{ value }}"
+                                        class="form-check-input visually-hidden format-radio"
+                                        {% if form.format.value == value or forloop.first and not form.format.value %}checked{% endif %}>
+                                    <label for="format_{{ value }}" class="card-body text-center py-3">
+                                        {% if value == 'mp4' %}
+                                            <i class="bi bi-film text-primary mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">MP4</h5>
+                                            <div class="mt-2 small text-muted">Video phổ biến</div>
+                                        {% elif value == 'webm' %}
+                                            <i class="bi bi-film text-success mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">WebM</h5>
+                                            <div class="mt-2 small text-muted">Chất lượng cao</div>
+                                        {% elif value == 'mov' %}
+                                            <i class="bi bi-camera-reels text-info mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">MOV</h5>
+                                            <div class="mt-2 small text-muted">Apple/QuickTime</div>
+                                        {% elif value == 'mkv' %}
+                                            <i class="bi bi-file-earmark-play text-danger mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">MKV</h5>
+                                            <div class="mt-2 small text-muted">Đa phương tiện</div>
+                                        {% elif value == 'mp3' %}
+                                            <i class="bi bi-music-note-beamed text-primary mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">MP3</h5>
+                                            <div class="mt-2 small text-muted">Audio phổ biến</div>
+                                        {% elif value == 'm4a' %}
+                                            <i class="bi bi-music-note text-success mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">M4A</h5>
+                                            <div class="mt-2 small text-muted">Apple Audio</div>
+                                        {% elif value == 'opus' %}
+                                            <i class="bi bi-music-player text-info mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">OPUS</h5>
+                                            <div class="mt-2 small text-muted">Chất lượng cao</div>
+                                        {% elif value == 'flac' %}
+                                            <i class="bi bi-file-earmark-music text-danger mb-3" style="font-size: 1.5rem;"></i>
+                                            <h5 class="card-title mb-0">FLAC</h5>
+                                            <div class="mt-2 small text-muted">Âm thanh lossless</div>
+                                        {% endif %}
                                     </label>
                                 </div>
                             </div>
-                            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="200">
-                                <div class="card h-100 format-card">
-                                    <input type="radio" id="format_mov" name="{{ form.format.html_name }}" value="mov"
-                                        class="form-check-input visually-hidden format-radio" {% if form.format.value == 'mov' %}checked{% endif %}>
-                                    <label for="format_mov" class="card-body text-center py-4">
-                                        <i class="bi bi-camera-reels text-primary mb-3" style="font-size: 2rem;"></i>
-                                        <h5 class="card-title mb-0">Video MOV</h5>
-                                        <div class="mt-2 small text-muted">Chất lượng cao</div>
-                                    </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options Toggle -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="{{ form.advanced_options.id_for_label }}" name="{{ form.advanced_options.html_name }}">
+                            <label class="form-check-label fw-bold" for="{{ form.advanced_options.id_for_label }}">
+                                <i class="bi bi-gear me-2"></i>Tùy chọn nâng cao
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options Container -->
+                    <div id="advanced-options-container" class="mb-4" style="display: none;">
+                        <div class="card">
+                            <div class="card-body">
+                                <!-- Video Options -->
+                                <div class="video-options">
+                                    <div class="mb-3">
+                                        <label for="{{ form.video_resolution.id_for_label }}" class="form-label">
+                                            <i class="bi bi-display me-2"></i>Độ phân giải video
+                                        </label>
+                                        {{ form.video_resolution }}
+                                        <div class="form-text">Chọn độ phân giải mong muốn cho video của bạn.</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-4" data-aos="zoom-in" data-aos-delay="250">
-                                <div class="card h-100 format-card">
-                                    <input type="radio" id="format_mp3" name="{{ form.format.html_name }}" value="mp3"
-                                        class="form-check-input visually-hidden format-radio" {% if form.format.value == 'mp3' %}checked{% endif %}>
-                                    <label for="format_mp3" class="card-body text-center py-4">
-                                        <i class="bi bi-music-note-beamed text-primary mb-3" style="font-size: 2rem;"></i>
-                                        <h5 class="card-title mb-0">Audio MP3</h5>
-                                        <div class="mt-2 small text-muted">Chỉ âm thanh</div>
+
+                                <!-- Audio Options -->
+                                <div class="audio-options">
+                                    <div class="mb-3">
+                                        <label for="{{ form.audio_quality.id_for_label }}" class="form-label">
+                                            <i class="bi bi-volume-up me-2"></i>Chất lượng âm thanh
+                                        </label>
+                                        {{ form.audio_quality }}
+                                        <div class="form-text">Chọn bitrate cho âm thanh của bạn. Bitrate cao = chất lượng tốt hơn.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Custom Format Code -->
+                                <div class="mb-0">
+                                    <label for="{{ form.custom_format_code.id_for_label }}" class="form-label">
+                                        <i class="bi bi-code-slash me-2"></i>Mã định dạng tùy chỉnh
                                     </label>
+                                    {{ form.custom_format_code }}
+                                    <div class="form-text">Dành cho người dùng nâng cao. Để trống để sử dụng cài đặt tự động.</div>
                                 </div>
                             </div>
                         </div>
@@ -122,7 +273,7 @@
                                 <div class="download-card">
                                     <div class="download-card-content">
                                         <div class="download-icon">
-                                            {% if download.format == 'mp3' %}
+                                            {% if download.format == 'mp3' or download.format == 'm4a' or download.format == 'opus' or download.format == 'flac' %}
                                                 <div class="media-icon audio-icon">
                                                     <i class="bi bi-file-earmark-music" style="font-size: 1.5rem;"></i>
                                                 </div>
@@ -135,9 +286,15 @@
                                         <div class="download-info">
                                             <h6 class="mb-1 text-truncate">{{ download.title|default:download.url }}</h6>
                                             <div class="download-meta">
-                                                <span class="badge {% if download.format == 'mp3' %}bg-info{% else %}bg-primary{% endif %}">
+                                                <span class="badge {% if download.format == 'mp3' or download.format == 'm4a' or download.format == 'opus' or download.format == 'flac' %}bg-info{% else %}bg-primary{% endif %}">
                                                     {{ download.format|upper }}
                                                 </span>
+                                                {% if download.resolution %}
+                                                <span class="badge bg-success">{{ download.resolution }}</span>
+                                                {% endif %}
+                                                {% if download.filesize %}
+                                                <span class="badge bg-secondary">{{ download.filesize }}</span>
+                                                {% endif %}
                                                 <small class="text-muted">
                                                     <i class="bi bi-clock me-1"></i>{{ download.created_at|date:"d/m/Y" }}
                                                 </small>
@@ -196,23 +353,83 @@ document.addEventListener('DOMContentLoaded', function() {
     const errorMessage = document.getElementById('error-message');
     const csrfToken = document.querySelector('[name="csrfmiddlewaretoken"]').value;
 
+    // Advanced options elements
+    const advancedOptionsCheckbox = document.getElementById('{{ form.advanced_options.id_for_label }}');
+    const advancedOptionsContainer = document.getElementById('advanced-options-container');
+    const videoOptionsContainer = document.querySelector('.video-options');
+    const audioOptionsContainer = document.querySelector('.audio-options');
+
+    // Video info and formats elements
+    const urlInput = document.getElementById('{{ form.url.id_for_label }}');
+    const videoInfoContainer = document.getElementById('video-info-container');
+    const videoThumbnail = document.getElementById('video-thumbnail');
+    const videoTitle = document.getElementById('video-title');
+    const videoDuration = document.getElementById('video-duration');
+    const checkFormatsBtn = document.getElementById('check-formats-btn');
+    const loadingFormats = document.getElementById('loading-formats');
+    const availableFormatsContainer = document.getElementById('available-formats-container');
+    const videoFormatsTable = document.getElementById('video-formats-table');
+    const audioFormatsTable = document.getElementById('audio-formats-table');
+
+    // Format radio elements
+    const formatRadios = document.querySelectorAll('.format-radio');
+
     let downloadId = null;
     let pollingInterval = null;
+    let debounceTimer;
+    let currentVideoInfo = null;
 
+    // Hiển thị/ẩn tùy chọn nâng cao khi checkbox thay đổi
+    advancedOptionsCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            advancedOptionsContainer.style.display = 'block';
+        } else {
+            advancedOptionsContainer.style.display = 'none';
+        }
+    });
+
+    // Hiển thị/ẩn tùy chọn dựa trên định dạng được chọn
+    formatRadios.forEach(function(radio) {
+        radio.addEventListener('change', updateOptionsVisibility);
+    });
+
+    // Cập nhật giao diện dựa trên định dạng ban đầu
+    updateOptionsVisibility();
+
+    // Theo dõi sự thay đổi URL để hiển thị thông tin video
+    urlInput.addEventListener('input', function() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(checkVideoUrl, 800);
+    });
+
+    // Nút kiểm tra định dạng có sẵn
+    if (checkFormatsBtn) {
+        checkFormatsBtn.addEventListener('click', fetchAvailableFormats);
+    }
+
+    // Xử lý khi submit form
     downloadForm.addEventListener('submit', function(e) {
         e.preventDefault();
 
-        // Mostrar contenedor de carga y ocultar formulario
+        // Kiểm tra URL
+        if (!urlInput.value.trim()) {
+            showError('Vui lòng nhập URL video hợp lệ.');
+            return;
+        }
+
+        // Hiển thị loading
         loadingContainer.style.display = 'block';
         downloadForm.style.display = 'none';
+        videoInfoContainer.style.display = 'none';
+        availableFormatsContainer.style.display = 'none';
 
-        // Reiniciar la barra de progreso
+        // Thiết lập lại thanh tiến trình
         setProgress(0);
 
-        // Recolectar datos del formulario
+        // Thu thập dữ liệu form
         const formData = new FormData(downloadForm);
 
-        // Enviar solicitud AJAX
+        // Gửi request AJAX
         fetch('', {
             method: 'POST',
             body: formData,
@@ -225,7 +442,7 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 downloadId = data.download_id;
-                // Redirigir a la página de progreso
+                // Chuyển đến trang tiến trình
                 window.location.href = `/progress/${downloadId}/`;
             } else {
                 showError(data.error || 'Không thể tải xuống. Vui lòng thử lại sau.');
@@ -236,6 +453,224 @@ document.addEventListener('DOMContentLoaded', function() {
             showError('Đã xảy ra lỗi khi kết nối đến máy chủ. Vui lòng thử lại sau.');
         });
     });
+
+    // Chọn định dạng từ bảng định dạng có sẵn
+    function selectFormat(formatId, isVideo) {
+        // Tự động chọn đúng loại định dạng (audio/video)
+        if (isVideo) {
+            document.getElementById('format_mp4').checked = true;
+        } else {
+            document.getElementById('format_mp3').checked = true;
+        }
+
+        // Bật tùy chọn nâng cao
+        advancedOptionsCheckbox.checked = true;
+        advancedOptionsContainer.style.display = 'block';
+
+        // Thiết lập mã định dạng tùy chỉnh
+        document.getElementById('{{ form.custom_format_code.id_for_label }}').value = formatId;
+
+        // Cập nhật giao diện
+        updateOptionsVisibility();
+
+        // Cuộn đến nút tải xuống
+        document.querySelector('button[type="submit"]').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Cập nhật hiển thị các tùy chọn dựa trên định dạng được chọn
+    function updateOptionsVisibility() {
+        // Lấy định dạng đã chọn
+        let selectedFormat = '';
+        formatRadios.forEach(function(radio) {
+            if (radio.checked) {
+                selectedFormat = radio.value;
+                // Thêm class active vào card
+                radio.closest('.format-card').classList.add('border-primary', 'border-2');
+            } else {
+                // Xóa class active khỏi các card khác
+                radio.closest('.format-card').classList.remove('border-primary', 'border-2');
+            }
+        });
+
+        // Ẩn/hiện tùy chọn theo loại định dạng
+        if (advancedOptionsContainer.style.display !== 'none') {
+            if (selectedFormat === 'mp3' || selectedFormat === 'm4a' || selectedFormat === 'opus' || selectedFormat === 'flac') {
+                // Định dạng audio
+                videoOptionsContainer.style.display = 'none';
+                audioOptionsContainer.style.display = 'block';
+            } else {
+                // Định dạng video
+                videoOptionsContainer.style.display = 'block';
+                audioOptionsContainer.style.display = 'block';
+            }
+        }
+    }
+
+    // Kiểm tra URL video và hiển thị thông tin nếu hợp lệ
+    function checkVideoUrl() {
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            videoInfoContainer.style.display = 'none';
+            availableFormatsContainer.style.display = 'none';
+            return;
+        }
+
+        // Kiểm tra URL có vẻ hợp lệ
+        if (isValidUrl(url)) {
+            // Nếu đã có thông tin trước đó thì hiển thị
+            if (currentVideoInfo) {
+                displayVideoInfo(currentVideoInfo);
+            } else {
+                // Nếu chưa có thông tin, chỉ hiển thị nút kiểm tra định dạng
+                videoInfoContainer.style.display = 'block';
+                videoTitle.textContent = 'Nhập URL hợp lệ. Bạn có thể kiểm tra định dạng có sẵn bên dưới.';
+                videoThumbnail.src = '';
+                videoDuration.textContent = '';
+            }
+        } else {
+            videoInfoContainer.style.display = 'none';
+            availableFormatsContainer.style.display = 'none';
+        }
+    }
+
+    // Lấy và hiển thị các định dạng có sẵn cho URL
+    function fetchAvailableFormats() {
+        const url = urlInput.value.trim();
+
+        if (!url) {
+            showError('Vui lòng nhập URL video trước khi kiểm tra định dạng có sẵn.');
+            return;
+        }
+
+        // Hiển thị đang tải
+        checkFormatsBtn.style.display = 'none';
+        loadingFormats.style.display = 'block';
+
+        // Gọi API để lấy thông tin định dạng
+        fetch(`/api/get-formats/?url=${encodeURIComponent(url)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Ẩn đang tải
+                loadingFormats.style.display = 'none';
+                checkFormatsBtn.style.display = 'block';
+
+                if (data.success) {
+                    // Lưu thông tin video
+                    currentVideoInfo = data;
+
+                    // Hiển thị thông tin video
+                    displayVideoInfo(data);
+
+                    // Hiển thị các định dạng có sẵn
+                    displayAvailableFormats(data.formats);
+                } else {
+                    showError(data.error || 'Không thể lấy thông tin định dạng. URL có thể không được hỗ trợ.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loadingFormats.style.display = 'none';
+                checkFormatsBtn.style.display = 'block';
+                showError('Đã xảy ra lỗi khi lấy thông tin định dạng. Vui lòng thử lại sau.');
+            });
+    }
+
+    // Hiển thị thông tin video
+    function displayVideoInfo(data) {
+        videoInfoContainer.style.display = 'block';
+
+        // Thiết lập thumbnail nếu có
+        if (data.thumbnail) {
+            videoThumbnail.src = data.thumbnail;
+        } else {
+            videoThumbnail.src = 'https://via.placeholder.com/480x360?text=No+Thumbnail';
+        }
+
+        // Thiết lập tiêu đề
+        videoTitle.textContent = data.title || 'Không có tiêu đề';
+
+        // Thiết lập thời lượng nếu có
+        if (data.duration) {
+            const minutes = Math.floor(data.duration / 60);
+            const seconds = data.duration % 60;
+            videoDuration.textContent = `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        } else {
+            videoDuration.textContent = '';
+        }
+    }
+
+    // Hiển thị bảng các định dạng có sẵn
+    function displayAvailableFormats(formats) {
+        if (!formats || formats.length === 0) {
+            availableFormatsContainer.style.display = 'none';
+            return;
+        }
+
+        // Hiển thị container
+        availableFormatsContainer.style.display = 'block';
+
+        // Xóa bảng hiện tại
+        videoFormatsTable.innerHTML = '';
+        audioFormatsTable.innerHTML = '';
+
+        // Phân loại định dạng
+        const videoFormats = formats.filter(f => f.type.includes('video'));
+        const audioFormats = formats.filter(f => f.type === 'audio');
+
+        // Hiển thị định dạng video
+        if (videoFormats.length > 0) {
+            videoFormats.forEach(format => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="badge bg-primary">${format.ext.toUpperCase()}</span></td>
+                    <td>${format.resolution || 'N/A'}</td>
+                    <td>${format.size || 'N/A'}</td>
+                    <td><code>${format.format_id}</code></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary choose-format-btn"
+                                data-format-id="${format.format_id}" data-is-video="true">
+                            <i class="bi bi-check-circle"></i> Chọn
+                        </button>
+                    </td>
+                `;
+                videoFormatsTable.appendChild(row);
+            });
+        } else {
+            videoFormatsTable.innerHTML = '<tr><td colspan="5" class="text-center">Không tìm thấy định dạng video</td></tr>';
+        }
+
+        // Hiển thị định dạng audio
+        if (audioFormats.length > 0) {
+            audioFormats.forEach(format => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="badge bg-info">${format.ext.toUpperCase()}</span></td>
+                    <td>${format.bitrate || 'N/A'}</td>
+                    <td>${format.size || 'N/A'}</td>
+                    <td><code>${format.format_id}</code></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-info choose-format-btn"
+                                data-format-id="${format.format_id}" data-is-video="false">
+                            <i class="bi bi-check-circle"></i> Chọn
+                        </button>
+                    </td>
+                `;
+                audioFormatsTable.appendChild(row);
+            });
+        } else {
+            audioFormatsTable.innerHTML = '<tr><td colspan="5" class="text-center">Không tìm thấy định dạng audio</td></tr>';
+        }
+
+        // Thêm event listeners cho các nút chọn định dạng
+        document.querySelectorAll('.choose-format-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const formatId = this.dataset.formatId;
+                const isVideo = this.dataset.isVideo === 'true';
+                selectFormat(formatId, isVideo);
+            });
+        });
+    }
 
     function startProgressPolling() {
         // Iniciar el polling para obtener actualizaciones de progreso
@@ -304,25 +739,18 @@ document.addEventListener('DOMContentLoaded', function() {
         downloadForm.style.display = 'block';
     }
 
-    // Hiệu ứng chọn định dạng
-    document.querySelectorAll('.format-radio').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            // Xóa class active khỏi tất cả các card
-            document.querySelectorAll('.format-card').forEach(function(card) {
-                card.classList.remove('border-primary', 'border-2');
-            });
-
-            // Thêm class active vào card được chọn
-            if (this.checked) {
-                this.closest('.format-card').classList.add('border-primary', 'border-2');
-            }
-        });
-
-        // Kích hoạt sự kiện change cho radio đã được chọn
-        if (radio.checked) {
-            radio.dispatchEvent(new Event('change'));
+    // Kiểm tra URL có định dạng hợp lệ không
+    function isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
         }
-    });
+    }
+
+    // Khởi tạo giao diện
+    updateOptionsVisibility();
 });
 </script>
 
@@ -345,6 +773,26 @@ document.addEventListener('DOMContentLoaded', function() {
         line-height: 100px;
         border-radius: 50%;
         text-align: center;
+    }
+
+    /* Video thumbnail styling */
+    .video-thumbnail-container {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .video-duration {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
     }
 
     .pulse-on-hover:hover {

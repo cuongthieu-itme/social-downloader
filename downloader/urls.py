@@ -18,4 +18,5 @@ urlpatterns = [
     path('download/<int:download_id>/edit/', views.edit_download, name='edit'),
     path('api/download/<int:download_id>/update/', views.api_update_download, name='api_update'),
     path('api/download-progress/<str:download_id>/', views.get_download_progress, name='download_progress'),
+    path('api/get-formats/', views.get_available_formats_api, name='get_formats'),
 ]

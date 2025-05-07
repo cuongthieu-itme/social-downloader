@@ -9,7 +9,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_http_methods
 from .forms import DownloadForm
 from .models import Download
-from .utils import download_media, get_content_type
+from .utils import download_media, get_content_type, get_available_formats
 
 # Diccionario global para almacenar el progreso de descarga
 download_progress = {}
@@ -20,6 +20,10 @@ def home(request):
         if form.is_valid():
             url = form.cleaned_data['url']
             format_type = form.cleaned_data['format']
+            video_resolution = form.cleaned_data.get('video_resolution', '')
+            audio_quality = form.cleaned_data.get('audio_quality', '')
+            custom_format_code = form.cleaned_data.get('custom_format_code', '')
+            advanced_options = form.cleaned_data.get('advanced_options', False)
 
             # Generar un ID de descarga temporal
             import uuid
@@ -29,7 +33,13 @@ def home(request):
             # Iniciar descarga en un hilo secundario
             thread = threading.Thread(
                 target=process_download,
-                args=(url, format_type, download_id, request)
+                args=(url, format_type, download_id, request),
+                kwargs={
+                    'video_resolution': video_resolution,
+                    'audio_quality': audio_quality,
+                    'custom_format_code': custom_format_code,
+                    'advanced_options': advanced_options
+                }
             )
             thread.daemon = True
             thread.start()
@@ -65,10 +75,24 @@ def download_progress_page(request, download_id):
         'download_id': download_id
     })
 
-def process_download(url, format_type, download_id, request):
+def process_download(url, format_type, download_id, request, video_resolution='',
+                     audio_quality='', custom_format_code='', advanced_options=False):
     """Procesa la descarga en un hilo separado y actualiza el progreso"""
     try:
-        result = download_media(url, format_type, progress_callback=lambda progress: update_progress(download_id, progress))
+        # Chỉ dùng các tùy chọn nâng cao nếu được bật
+        if not advanced_options:
+            video_resolution = ''
+            audio_quality = ''
+            custom_format_code = ''
+
+        result = download_media(
+            url,
+            format_type,
+            video_resolution=video_resolution,
+            audio_quality=audio_quality,
+            custom_format_code=custom_format_code,
+            progress_callback=lambda progress: update_progress(download_id, progress)
+        )
 
         if not result['success']:
             download_progress[download_id] = {
@@ -82,7 +106,10 @@ def process_download(url, format_type, download_id, request):
             url=url,
             title=result['title'],
             format=format_type,
-            file_path=result['file_path']
+            file_path=result['file_path'],
+            resolution=result.get('resolution', ''),
+            format_code=result.get('format_code', ''),
+            filesize=result.get('filesize', '')
         )
 
         # Actualizar progreso con información de éxito
@@ -299,6 +326,26 @@ def api_update_download(request, download_id):
         return JsonResponse({
             'success': False,
             'message': str(e)
+        }, status=500)
+
+@csrf_exempt
+def get_available_formats_api(request):
+    """API endpoint to retrieve available formats for a given URL"""
+    url = request.GET.get('url', '')
+
+    if not url:
+        return JsonResponse({
+            'success': False,
+            'error': 'URL không được để trống'
+        }, status=400)
+
+    try:
+        formats = get_available_formats(url)
+        return JsonResponse(formats)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
         }, status=500)
 
 # Create your views here.

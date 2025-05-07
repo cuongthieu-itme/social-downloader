@@ -38,7 +38,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'downloader',
-    'user_auth',
 ]
 
 MIDDLEWARE = [
@@ -127,11 +126,6 @@ STATICFILES_DIRS = [
 # Media files (Uploaded and Downloaded files)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# Login settings
-LOGIN_URL = 'user_auth:login'
-LOGIN_REDIRECT_URL = 'downloader:home'
-LOGOUT_REDIRECT_URL = 'downloader:home'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
