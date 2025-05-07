@@ -26,15 +26,25 @@
             </div>
             <div class="card-body p-0">
                 <div class="player-wrapper bg-dark p-4 text-center">
-                    {% if download.format == 'mp3' %}
-                        <!-- Audio player cho MP3 với visualizer -->
+                    {% if download.format == 'mp3' or download.format == 'm4a' or download.format == 'opus' or download.format == 'flac' %}
+                        <!-- Audio player for audio formats with visualizer -->
                         <div class="py-4">
                             <div class="mb-4">
                                 <i class="bi bi-music-note-beamed text-primary" style="font-size: 4rem;"></i>
                             </div>
                             <div class="audio-player-container">
-                                <audio controls class="w-100 custom-audio-player">
-                                    <source src="{% url 'downloader:media_file' download.id %}" type="audio/mpeg">
+                                <audio controls class="w-100 custom-audio-player" preload="auto">
+                                    {% if download.format == 'mp3' %}
+                                        <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="audio/mpeg">
+                                    {% elif download.format == 'm4a' %}
+                                        <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="audio/mp4">
+                                    {% elif download.format == 'opus' %}
+                                        <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="audio/opus">
+                                    {% elif download.format == 'flac' %}
+                                        <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="audio/flac">
+                                    {% else %}
+                                        <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="audio/mpeg">
+                                    {% endif %}
                                     Trình duyệt của bạn không hỗ trợ phát audio.
                                 </audio>
                             </div>
@@ -43,7 +53,7 @@
                         <!-- Video player cho MP4/MOV với controls tùy chỉnh -->
                         <div class="ratio ratio-16x9 mb-0">
                             <video controls preload="metadata" poster="" class="custom-video-player">
-                                <source src="{% url 'downloader:media_file' download.id %}" type="video/{{ download.format }}">
+                                <source src="{% url 'downloader:media_file' download.id %}?t={% now 'U' %}" type="video/{{ download.format }}">
                                 Trình duyệt của bạn không hỗ trợ phát video.
                             </video>
                         </div>
@@ -147,6 +157,25 @@
         background-color: rgba(255, 255, 255, 0.8);
     }
 
+    audio.custom-audio-player {
+        width: 100%;
+        height: 50px;
+    }
+
+    /* Audio player enhancements */
+    audio:focus {
+        outline: none;
+    }
+
+    /* Ensure audio player is visible */
+    .audio-player-container {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 15px;
+        border-radius: 10px;
+        margin: 0 auto;
+        max-width: 90%;
+    }
+
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .table th {
@@ -163,6 +192,32 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const downloadBtn = document.getElementById('download-btn');
+
+    // Check if audio player exists and add event listeners
+    const audioPlayer = document.querySelector('audio.custom-audio-player');
+    if (audioPlayer) {
+        // Add error handler for debugging audio issues
+        audioPlayer.addEventListener('error', function(e) {
+            console.error('Audio player error:', e);
+        });
+
+        // Force reload if initial load fails
+        audioPlayer.addEventListener('loadeddata', function() {
+            console.log('Audio loaded successfully');
+        });
+
+        // Try to reload after a delay if needed
+        setTimeout(() => {
+            if (audioPlayer.readyState === 0) {
+                const sources = audioPlayer.querySelectorAll('source');
+                sources.forEach(source => {
+                    const currentSrc = source.src;
+                    source.src = currentSrc;
+                });
+                audioPlayer.load();
+            }
+        }, 1000);
+    }
 
     downloadBtn.addEventListener('click', function() {
         // Show toast notification

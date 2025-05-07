@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST, require_http_methods
 from .forms import DownloadForm
 from .models import Download
 from .utils import download_media, get_content_type, get_available_formats
+import re
 
 # Diccionario global para almacenar el progreso de descarga
 download_progress = {}
@@ -184,38 +185,90 @@ def download_file(request, download_id):
         if not os.path.exists(file_path):
             return render(request, 'downloader/error.html', {'error': 'File không tồn tại trên server.'})
 
-        # Crear un nombre de archivo amigable basado en el título
+        # Create a clean filename based on the title
         safe_title = "".join([c for c in download.title if c.isalpha() or c.isdigit() or c==' ']).strip()
         safe_title = safe_title.replace(' ', '_')
-        # Obtener la extensión del archivo
+        # Get file extension
         file_extension = os.path.splitext(download.file_path)[1] or f'.{download.format}'
         download_filename = f"{safe_title}{file_extension}"
 
-        with open(file_path, 'rb') as f:
-            response = HttpResponse(f.read())
-            response['Content-Type'] = get_content_type(download.format)
-            response['Content-Disposition'] = f'attachment; filename="{download_filename}"'
-            return response
+        # Use FileResponse for better file serving
+        response = FileResponse(
+            open(file_path, 'rb'),
+            content_type=get_content_type(download.format)
+        )
+
+        # Add headers for file download
+        response['Content-Disposition'] = f'attachment; filename="{download_filename}"'
+        response['Content-Length'] = str(os.path.getsize(file_path))
+
+        return response
     except Download.DoesNotExist:
         return render(request, 'downloader/error.html', {'error': 'Không tìm thấy bản ghi download.'})
+    except Exception as e:
+        return render(request, 'downloader/error.html', {'error': f'Lỗi: {str(e)}'})
 
 def serve_media_file(request, download_id):
     try:
         download = Download.objects.get(id=download_id)
         if not download.file_path:
-            return HttpResponse(status=404)
+            return HttpResponse(status=404, content="File path not found")
 
         file_path = os.path.join(settings.MEDIA_ROOT, download.file_path)
         if not os.path.exists(file_path):
-            return HttpResponse(status=404)
+            return HttpResponse(status=404, content="File not found on server")
 
-        with open(file_path, 'rb') as f:
-            response = HttpResponse(f.read())
-            response['Content-Type'] = get_content_type(download.format)
-            # Bỏ Content-Disposition để cho phép xem trực tiếp trong trình duyệt
-            return response
+        # Get file stats
+        file_size = os.path.getsize(file_path)
+
+        # Determine content type based on file format
+        format_type = download.format.lower()
+        content_type = get_content_type(format_type)
+
+        # Range header handling for seeking support in media players
+        range_header = request.META.get('HTTP_RANGE', '').strip()
+        range_re = re.compile(r'bytes\s*=\s*(\d+)\s*-\s*(\d*)', re.I)
+        range_match = range_re.match(range_header)
+
+        if range_match:
+            first_byte, last_byte = range_match.groups()
+            first_byte = int(first_byte) if first_byte else 0
+            last_byte = int(last_byte) if last_byte else file_size - 1
+            if last_byte >= file_size:
+                last_byte = file_size - 1
+            length = last_byte - first_byte + 1
+
+            response = FileResponse(
+                open(file_path, 'rb'),
+                status=206,
+                content_type=content_type
+            )
+            response['Content-Length'] = str(length)
+            response['Content-Range'] = f'bytes {first_byte}-{last_byte}/{file_size}'
+        else:
+            # Regular file serving
+            response = FileResponse(
+                open(file_path, 'rb'),
+                content_type=content_type
+            )
+            response['Content-Length'] = str(file_size)
+
+        # Set necessary headers for better media playback
+        response['Accept-Ranges'] = 'bytes'
+        response['Cache-Control'] = 'public, max-age=3600'
+
+        # Add filename information (don't use Content-Disposition for preview)
+        safe_title = "".join([c for c in download.title if c.isalpha() or c.isdigit() or c==' ']).strip()
+        safe_title = safe_title.replace(' ', '_')
+
+        return response
     except Download.DoesNotExist:
-        return HttpResponse(status=404)
+        return HttpResponse(status=404, content="Download record not found")
+    except Exception as e:
+        import traceback
+        print(f"Error serving media file: {str(e)}")
+        print(traceback.format_exc())
+        return HttpResponse(status=500, content=f"Internal server error: {str(e)}")
 
 # API Endpoints cho thêm, sửa, xóa
 @require_POST
